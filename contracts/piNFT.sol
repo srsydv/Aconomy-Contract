@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./utils/LibShare.sol";
+import "./Libraries/LibPool.sol";
+import "./Libraries/LibBorrower.sol";
 
 contract piNFT is ERC721URIStorage{
 
@@ -144,6 +146,41 @@ contract piNFT is ERC721URIStorage{
     // view ERC 20 token balance of a token
     function viewBalance(uint256 _tokenId, address _erc20Address) public view returns (uint256) {
         return erc20Balances[_tokenId][_erc20Address];
+    }
+
+      // view ERC 20 token balance of a token
+    function viewBalance(uint256 _tokenId, address _erc20Address) public view returns (uint256) {
+        return erc20Balances[_tokenId][_erc20Address];
+    }
+
+    // uint256 public poolIdTracker;
+     Counters.Counter public poolIdTracker;
+    // poolAddress => Borrower
+    mapping(address => LibBorrower.Borrower) public pooladdressInfo;
+
+    event poolAddressDetail(address pooladdress);
+
+    function createPool(
+        string memory description,
+        uint256 value,
+        uint256 intrestRate,
+        uint256 lateIntrestRate
+    )
+    external {
+        poolIdTracker.increment();
+
+        address poolAddress = LibPool.deployPoolAddress();
+
+        LibBorrower.Borrower memory data = LibBorrower.Borrower(
+        description,
+        msg.sender,
+        value,
+        intrestRate,
+        lateIntrestRate
+        );
+
+        pooladdressInfo[poolAddress] = data;
+        emit poolAddressDetail(poolAddress);
     }
 
 }
