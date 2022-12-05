@@ -2,6 +2,7 @@
 pragma solidity 0.8.2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./Interface/IpiNFT.sol";
 
 contract poolAddress {
     constructor() {}
@@ -26,7 +27,6 @@ contract poolAddress {
         require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), _value), "ERC20 transfer failed");
     }
 
-
     // update the mappings for a token on recieving ERC20 tokens
     function fundReceived(address investorWalletAddress, address _erc20Address, uint256 _value) private {
         uint256 investorBalanceDetail = investorBalanceDetails[investorWalletAddress][_erc20Address];
@@ -35,7 +35,12 @@ contract poolAddress {
             erc20Addresses[investorWalletAddress].push(_erc20Address);
         }
         investorBalanceDetails[investorWalletAddress][_erc20Address] += _value;
-        emit ReceivedERC20(investorWalletAddress, address(this), _erc20Address, _value,investorBalanceDetail);
+        emit ReceivedERC20(investorWalletAddress, address(this), _erc20Address, _value);
+    }
+
+    function releaseFund(address piNFTaddress, address _from, uint256 _tokenId, address _erc20Address, uint256 _value) public {
+        IERC20(_erc20Address).approve(piNFTaddress, _value);
+        IpiNFT(piNFTaddress).addERC20(_from, _tokenId, _erc20Address, _value);
     }
 
 }
