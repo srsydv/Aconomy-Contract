@@ -153,7 +153,7 @@ contract piNFT is ERC721URIStorage{
         return erc20Balances[_tokenId][_erc20Address];
     }
 
-    // uint256 public poolIdTracker;
+     // uint256 public poolIdTracker;
      Counters.Counter public poolIdTracker;
     // poolAddress => Borrower
     mapping(address => LibBorrower.Borrower) public pooladdressInfo;
@@ -162,25 +162,26 @@ contract piNFT is ERC721URIStorage{
 
     function createPool(
         string memory description,
-        uint256 value,
+        uint256 target,
         uint256 intrestRate,
-        uint256 lateIntrestRate
+        uint256 lateIntrestRate,
+        uint lateIntrestRateDeadLine
     )
     external {
         poolIdTracker.increment();
 
-        address poolAddress = LibPool.deployPoolAddress();
+        address poolAddress = LibPool.deployPoolAddress(msg.sender, target, intrestRate, lateIntrestRate, lateIntrestRateDeadLine);
 
         LibBorrower.Borrower memory data = LibBorrower.Borrower(
         description,
         msg.sender,
-        value,
+        target,
         intrestRate,
-        lateIntrestRate
+        lateIntrestRate,
+        lateIntrestRateDeadLine
         );
 
         pooladdressInfo[poolAddress] = data;
         emit poolAddressDetail(poolAddress);
     }
-
 }
