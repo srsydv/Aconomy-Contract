@@ -8,5 +8,6 @@ library LibBorrower {
         uint256 value;
         uint256 intrestRate;
         uint256 lateIntrestRate;
+        uint256 lateIntrestRateDeadLine;
     }
 }
