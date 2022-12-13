@@ -6,8 +6,9 @@ library LibBorrower {
         string description;
         address borrowerwolletaddress;
         uint256 value;
-        uint256 intrestRate;
-        uint256 lateIntrestRate;
-        uint256 lateIntrestRateDeadLine;
+        uint256 interestRate;
+        uint256 lateInterestRate;
+        uint256 lateInterestRateDeadLine;
+        uint256 rePayStartDate;
     }
 }
