@@ -10,5 +10,6 @@ library LibBorrower {
         uint256 lateInterestRate;
         uint256 lateInterestRateDeadLine;
         uint256 rePayStartDate;
+        uint256 totalRepayDeadLine;
     }
 }

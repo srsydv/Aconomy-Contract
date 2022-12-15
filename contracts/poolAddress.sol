@@ -10,10 +10,11 @@
         uint256 public target;
         uint256 public interestRate;
         uint256 public lateInterestRate;
-        uint256 public lateInterestRateDeadLine;
+        uint256 public installmentPeriod;
         uint256 public createdAt;
         uint256 public repayStartDate;
         uint256 public repayInstallment;
+        uint256 public totalRepayDeadLine;
 
         uint256 public constant SECONDS_PER_DAY = 60 * 60 * 24;
         using SafeMath for uint;
@@ -22,23 +23,28 @@
             uint256 _target, 
             uint256 _interestRate, 
             uint256 _lateInterestRate,
-            uint256 _lateInterestRateDeadLine,
-            uint256 _rePayStartDate
+            uint256 _installmentPeriod,
+            uint256 _rePayStartDate,
+            uint256 _totalRepayDeadLine
         ) {
             Borrower = _Borrower;
             target = _target;
             interestRate = _interestRate;
             lateInterestRate = _lateInterestRate;
-            lateInterestRateDeadLine = block.timestamp + _lateInterestRateDeadLine;
+            installmentPeriod = _installmentPeriod;
             createdAt = block.timestamp;
             repayStartDate = block.timestamp + _rePayStartDate;
+            totalRepayDeadLine = _totalRepayDeadLine;
         }
-// 0xF7D3bdf086d66E548c945CA410BB80Fc00E49831
+
         // investorWalletAddress => (ERC20Address => value)
         mapping(address => mapping(address => uint256)) public investorBalanceDetails;
 
         // investorWalletAddress => (token contract => token contract index)
         mapping(address => mapping(address => uint256)) public erc20AddressIndex;
+
+        //Total Fund
+        mapping(address => uint256) public totalFund;
 
         // address => token contract
         mapping(address => address[]) public erc20Addresses;
@@ -48,7 +54,7 @@
 
         address public owner;
         function _onlyBorrower() private view {
-            require(msg.sender == Borrower);
+            require(msg.sender == Borrower, "You are not a Borrower of this Pool Address");
         }
         modifier onlyOwner() {
             _onlyBorrower();
@@ -73,6 +79,7 @@
                 erc20AddressIndex[investorWalletAddress][_erc20Address] = erc20Addresses[investorWalletAddress].length;
                 erc20Addresses[investorWalletAddress].push(_erc20Address);
             }
+            totalFund[_erc20Address] += _value;
             investorBalanceDetails[investorWalletAddress][_erc20Address] += _value;
             emit ReceivedERC20(investorWalletAddress, address(this), _erc20Address, _value);
         }
@@ -82,29 +89,83 @@
             IpiNFT(piNFTaddress).addERC20(poolContractAddress, _tokenId, _erc20Address, _value);
         }
 
-        function rePay(address _erc20Address, uint256 _value) onlyOwner public{
+        // function payInstallment(address _erc20Address, uint256 _value) onlyOwner public{
+        // // function payInstallment(address _erc20Address, uint256 _value,uint256 totalAmount) public view returns(uint256){
+        //     uint currentTime = block.timestamp;
+        //     uint currentRepayInstallment = _currentRepayInstallment();
+        //     uint currentRepayInstallmentTime = installmentPeriod.mul(currentRepayInstallment);
+        //     uint checkRepayTime = createdAt+repayStartDate+currentRepayInstallmentTime;
+        //     if(currentTime < checkRepayTime) {
+        //         uint totalAmount= totalFund[_erc20Address];
+        //         uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
+        //         uint totalValue = totalAmount + appliedTotleInterest;
+        //         uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
+        //         uint payPerInstallement = totalValue.div(totalInstallements);
+        //         require(_value >= payPerInstallement, "you are paying less amount");
+        //         require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), _value), "ERC20 transfer failed");
+        //         repayInstallment++;
+        //         // return(payPerInstallement);
+        //     }
+        //     // return(22);
+        // }
+
+        // function payInstallment(address _erc20Address, uint256 _value) onlyOwner public{
+        function payInstallment(address _erc20Address, uint256 _value, uint256 totalAmount) public view returns(uint256){
             uint currentTime = block.timestamp;
-            uint checkRepayTime = repayStartDate+lateInterestRateDeadLine;
-            if(currentTime < checkRepayTime) {
-                // uint payValue = _appliedTotleInterest();
+            uint currentRepayInstallment = _currentRepayInstallment();
+            uint currentRepayInstallmentTime = installmentPeriod.mul(currentRepayInstallment);
+            uint checkRepayTime = createdAt+repayStartDate+currentRepayInstallmentTime;
+            if(currentTime < checkRepayTime && currentRepayInstallment == repayInstallment) {
+                // uint totalAmount= totalFund[_erc20Address];
+                uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
+                uint totalValue = totalAmount + appliedTotleInterest;
+                uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
+                uint payPerInstallement = totalValue.div(totalInstallements);
+                require(_value >= payPerInstallement, "you are paying less amount");
+                // require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), _value), "ERC20 transfer failed");
+                // repayInstallment++;
+                return(payPerInstallement);
+            }
+            else{
+                
             }
         }
+
+        function _plusrepayInstallment() public returns(uint256) {
+            // uint ourShare = sumForLoan.mul(25).div(1000); taking 2.5% to pandora's acc
+            repayInstallment++;
+        }
+
 
         // 100 10month totle=10%Interest
         // total 110
         // 11 == 11
         // lateInterestRate= 11.05 in 12mnth = 22.05 13mnth = 2rs/lateIntrestrate 2.10 11+22.05+2.10
 
-        function _appliedTotleInterest(uint v) public returns(uint256) {
+
+// 0xF7D3bdf086d66E548c945CA410BB80Fc00E49831
+        function _appliedPayValue(uint totalAmount) public view returns(uint256) {
             // uint ourShare = sumForLoan.mul(25).div(1000); taking 2.5% to pandora's acc
-            uint256 b = v.mul(5).div(100);
+            // uint256 b = v.mul(5).div(100);
+            // return b;
+            // uint appliedTotleInterest = _appliedTotleInterest(ttlamount , 5);
+            uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
+            uint tatalValue = totalAmount + appliedTotleInterest;
+            uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
+            uint payPerInstallement = tatalValue.div(totalInstallements);
+            return(payPerInstallement);
+        }
+
+        function _appliedTotleInterest(uint v, uint intereseRate1) public returns(uint256) {
+            // uint ourShare = sumForLoan.mul(25).div(1000); taking 2.5% to pandora's acc
+            uint256 b = v.mul(intereseRate1).div(100);
             return b;
         }
 
-        function calculateRepayInstallment() public view returns(uint256) {
+        function _currentRepayInstallment() public view returns(uint256) {
             uint currentTime = block.timestamp;
             uint checkInstallment = currentTime - repayStartDate;
-            uint res = checkInstallment.div(lateInterestRateDeadLine);
+            uint res = checkInstallment.div(installmentPeriod);
             return(res);
 
         }
@@ -114,17 +175,11 @@
             return(currentTime);
 
         }
-        function checkInstallments() public view returns(uint256) {
+        function currentTime() public view returns(uint256) {
             uint currentTime = block.timestamp;
             uint checkInstallment = currentTime - repayStartDate;
             return(checkInstallment);
 
-        }
-
-        function seee() public view returns(uint256){
-            uint currentTime = block.timestamp;
-            uint ss = repayStartDate - currentTime;
-            return(ss);
         }
 
     }

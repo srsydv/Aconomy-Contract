@@ -153,7 +153,7 @@ contract piNFT is ERC721URIStorage{
         return erc20Balances[_tokenId][_erc20Address];
     }
 
-      // uint256 public poolIdTracker;
+    // uint256 public poolIdTracker;
      Counters.Counter public poolIdTracker;
     // poolAddress => Borrower
     mapping(address => LibBorrower.Borrower) public pooladdressInfo;
@@ -166,12 +166,13 @@ contract piNFT is ERC721URIStorage{
         uint256 interestRate,
         uint256 lateInterestRate,
         uint256 lateInterestRateDeadLine,
-        uint256 rePayStartDate
+        uint256 rePayStartDate,
+        uint256 totalRepayDeadLine
     )
     external {
         poolIdTracker.increment();
 
-        address poolAddress = LibPool.deployPoolAddress(msg.sender, target, interestRate, lateInterestRate, lateInterestRateDeadLine, rePayStartDate);
+        address poolAddress = LibPool.deployPoolAddress(msg.sender, target, interestRate, lateInterestRate, lateInterestRateDeadLine, rePayStartDate, totalRepayDeadLine);
 
         LibBorrower.Borrower memory data = LibBorrower.Borrower(
         description,
@@ -180,7 +181,8 @@ contract piNFT is ERC721URIStorage{
         interestRate,
         lateInterestRate,
         lateInterestRateDeadLine,
-        rePayStartDate
+        rePayStartDate,
+        totalRepayDeadLine
         );
 
         pooladdressInfo[poolAddress] = data;
