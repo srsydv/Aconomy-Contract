@@ -109,32 +109,85 @@
         //     // return(22);
         // }
 
-        // function payInstallment(address _erc20Address, uint256 _value) onlyOwner public{
-        function payInstallment(address _erc20Address, uint256 _value, uint256 totalAmount) public view returns(uint256){
+        // function payInstallment(address _erc20Address, uint256 _value, uint256 _repayInstallment) onlyOwner public{
+        //     uint currentTime = block.timestamp;
+        //     uint currentRepayInstallment = _currentRepayInstallment();
+        //     uint currentRepayInstallmentTime = installmentPeriod.mul(currentRepayInstallment);
+        //     uint checkRepayTime = createdAt+repayStartDate+currentRepayInstallmentTime;
+        //     uint totalAmount= totalFund[_erc20Address];
+        //     if(currentTime < checkRepayTime && currentRepayInstallment == repayInstallment) {
+        //         uint payPerInstallement = _payPerInstallement(totalAmount);
+        //         require(_repayInstallment == 0, "You are Paying wrong Installment");
+        //         require(_value >= payPerInstallement, "you are paying less amount");
+        //         require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), _value), "ERC20 transfer failed");
+        //         repayInstallment++;
+        //     }
+        //     else{
+        //         require(_repayInstallment != 0, "You are Paying wrong Installment");
+        //         uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
+        //         uint totalValue = totalAmount + appliedTotleInterest;
+        //         uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
+        //         uint payPerInstallement = totalValue.div(totalInstallements).mul(_repayInstallment);
+
+        //         _repayInstallment += repayInstallment;
+        //         uint interestOnLateInstallement = appliedTotleInterest.mul(_repayInstallment);
+        //         uint appliedLateInterest = interestOnLateInstallement.mul(lateInterestRate).div(100);
+
+        //         uint latePayValue = payPerInstallement + appliedLateInterest;
+        //         require(_value >= latePayValue, "you are paying less amount");
+        //         require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), latePayValue), "ERC20 transfer failed");
+        //         repayInstallment += _repayInstallment;
+        //     }
+        // }
+
+        function payInstallment(address _erc20Address, uint256 _value, uint256 _repayInstallment) onlyOwner public{
             uint currentTime = block.timestamp;
             uint currentRepayInstallment = _currentRepayInstallment();
             uint currentRepayInstallmentTime = installmentPeriod.mul(currentRepayInstallment);
             uint checkRepayTime = createdAt+repayStartDate+currentRepayInstallmentTime;
+            uint totalAmount= totalFund[_erc20Address];
             if(currentTime < checkRepayTime && currentRepayInstallment == repayInstallment) {
-                // uint totalAmount= totalFund[_erc20Address];
+                uint payPerInstallement = _payPerInstallement(totalAmount);
+                require(_repayInstallment == 0, "You are Paying wrong Installment");
+                require(_value >= payPerInstallement, "you are paying less amount");
+                require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), _value), "ERC20 transfer failed");
+                repayInstallment++;
+            }
+            else{
+                require(_repayInstallment != 0, "You are Paying wrong Installment");
                 uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
                 uint totalValue = totalAmount + appliedTotleInterest;
                 uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
-                uint payPerInstallement = totalValue.div(totalInstallements);
-                require(_value >= payPerInstallement, "you are paying less amount");
-                // require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), _value), "ERC20 transfer failed");
-                // repayInstallment++;
-                return(payPerInstallement);
-            }
-            else{
-                
+                uint payPerInstallement = totalValue.div(totalInstallements).mul(_repayInstallment);
+
+                _repayInstallment += repayInstallment;
+                uint interestOnLateInstallement = appliedTotleInterest.mul(_repayInstallment);
+                uint appliedLateInterest = interestOnLateInstallement.mul(lateInterestRate).div(100);
+
+                uint latePayValue = payPerInstallement + appliedLateInterest;
+                require(_value >= latePayValue, "you are paying less amount");
+                require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), latePayValue), "ERC20 transfer failed");
+                repayInstallment += _repayInstallment;
             }
         }
 
-        function _plusrepayInstallment() public returns(uint256) {
-            // uint ourShare = sumForLoan.mul(25).div(1000); taking 2.5% to pandora's acc
-            repayInstallment++;
+        function _viewRepayAmountWithInstallement(address _erc20Address, uint256 _repayInstallment) public view returns(uint256) {
+            uint totalAmount= totalFund[_erc20Address];
+            // uint totalAmount= 10000;
+            uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
+                uint totalValue = totalAmount + appliedTotleInterest;
+                uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
+                uint payPerInstallement = totalValue.div(totalInstallements).mul(_repayInstallment);
+
+                _repayInstallment += repayInstallment;
+                uint interestOnLateInstallement = appliedTotleInterest.mul(_repayInstallment);
+                uint appliedLateInterest = interestOnLateInstallement.mul(lateInterestRate).div(100);
+
+                uint latePayValue = payPerInstallement + appliedLateInterest;
+            return(latePayValue);
+
         }
+
 
 
         // 100 10month totle=10%Interest
@@ -144,7 +197,8 @@
 
 
 // 0xF7D3bdf086d66E548c945CA410BB80Fc00E49831
-        function _appliedPayValue(uint totalAmount) public view returns(uint256) {
+// srs = 0x6E22A7d1773879D3f045706e538ffab573762D7c
+        function _payPerInstallement(uint totalAmount) public returns(uint256) {
             // uint ourShare = sumForLoan.mul(25).div(1000); taking 2.5% to pandora's acc
             // uint256 b = v.mul(5).div(100);
             // return b;
@@ -155,6 +209,13 @@
             uint payPerInstallement = tatalValue.div(totalInstallements);
             return(payPerInstallement);
         }
+
+
+        function _plusrepayInstallment() public returns(uint256) {
+            repayInstallment++;
+        }
+
+
 
         function _appliedTotleInterest(uint v, uint intereseRate1) public returns(uint256) {
             // uint ourShare = sumForLoan.mul(25).div(1000); taking 2.5% to pandora's acc
