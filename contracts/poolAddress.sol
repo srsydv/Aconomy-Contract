@@ -141,39 +141,57 @@
         // }
 
         function payInstallment(address _erc20Address, uint256 _value, uint256 _repayInstallment) onlyOwner public{
+            // function payInstallment(address _erc20Address, uint256 _value, uint256 _repayInstallment) public view returns(uint256){
             uint currentTime = block.timestamp;
             uint currentRepayInstallment = _currentRepayInstallment();
-            uint currentRepayInstallmentTime = installmentPeriod.mul(currentRepayInstallment);
+            uint currentRepayInstallmentTime = installmentPeriod.mul(currentRepayInstallment-1);
             uint checkRepayTime = createdAt+repayStartDate+currentRepayInstallmentTime;
             uint totalAmount= totalFund[_erc20Address];
-            if(currentTime < checkRepayTime && currentRepayInstallment == repayInstallment) {
+            // uint totalAmount= _value;
+            if(currentTime < checkRepayTime && currentRepayInstallment == repayInstallment+1) {
+
+                // uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
+                // uint tatalValue = totalAmount + appliedTotleInterest;
+                // uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
+                // uint payPerInstallement = tatalValue.div(totalInstallements);
+
                 uint payPerInstallement = _payPerInstallement(totalAmount);
-                require(_repayInstallment == 0, "You are Paying wrong Installment");
+                require(_repayInstallment == 1, "You are Paying wrong Installment");
                 require(_value >= payPerInstallement, "you are paying less amount");
                 require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), _value), "ERC20 transfer failed");
                 repayInstallment++;
+                // return(payPerInstallement);
             }
             else{
-                require(_repayInstallment != 0, "You are Paying wrong Installment");
+                // require(_repayInstallment != 1, "You are Paying wrong Installment");
                 uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
                 uint totalValue = totalAmount + appliedTotleInterest;
                 uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
                 uint payPerInstallement = totalValue.div(totalInstallements).mul(_repayInstallment);
 
-                _repayInstallment += repayInstallment;
-                uint interestOnLateInstallement = appliedTotleInterest.mul(_repayInstallment);
-                uint appliedLateInterest = interestOnLateInstallement.mul(lateInterestRate).div(100);
-
+                uint appliedLateInterest;
+                uint totalInstallment = _repayInstallment + repayInstallment;
+                uint checkInterestOnInstallment = currentRepayInstallment - totalInstallment;
+                if(checkInterestOnInstallment != 0){
+                    uint interestOnLateInstallement = appliedTotleInterest.mul(_repayInstallment);
+                    appliedLateInterest = interestOnLateInstallement.mul(lateInterestRate).div(100);
+                }
+                else{
+                    uint lateInterestOnInstallment = _repayInstallment-1;
+                    uint interestOnLateInstallement = appliedTotleInterest.mul(lateInterestOnInstallment);
+                    appliedLateInterest = interestOnLateInstallement.mul(lateInterestRate).div(100);
+                }
                 uint latePayValue = payPerInstallement + appliedLateInterest;
-                require(_value >= latePayValue, "you are paying less amount");
+                // require(_value >= latePayValue, "you are paying less amount");
                 require(IERC20(_erc20Address).transferFrom(msg.sender, address(this), latePayValue), "ERC20 transfer failed");
                 repayInstallment += _repayInstallment;
+                // return(latePayValue);
             }
         }
 
         function _viewRepayAmountWithInstallement(address _erc20Address, uint256 _repayInstallment) public view returns(uint256) {
-            uint totalAmount= totalFund[_erc20Address];
-            // uint totalAmount= 10000;
+            // uint totalAmount= totalFund[_erc20Address];
+            uint totalAmount= 10000;
             uint appliedTotleInterest = totalAmount.mul(interestRate).div(100);
                 uint totalValue = totalAmount + appliedTotleInterest;
                 uint totalInstallements = totalRepayDeadLine.div(installmentPeriod);
@@ -227,7 +245,7 @@
             uint currentTime = block.timestamp;
             uint checkInstallment = currentTime - repayStartDate;
             uint res = checkInstallment.div(installmentPeriod);
-            return(res);
+            return(res+1);
 
         }
 
